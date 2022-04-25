@@ -1,0 +1,26 @@
+# Aspose.3D Wavefront OBJ Exporter
+# Copyright 2004-2022 Aspose Pty Ltd.
+# File created: 04/18/2022 19:42:08
+
+newmtl Material #25
+	Ka 0.2 0.2 0.2
+	Kd 0.8 0.8 0.8
+	d 1
+	Tr 0
+	illum 2
+	Ks 0.2 0.2 0.2
+	Ns 20
+	map_Kd KV2_diff.jpg
+	map_Kn KV2_normal.jpg
+	map_Ks KV2_spec.jpg
+newmtl 02 - Default
+	Ka 0.58823531866073608 0.58823531866073608 0.58823531866073608
+	Kd 0.58823531866073608 0.58823531866073608 0.58823531866073608
+	d 1
+	Tr 0
+	illum 2
+	Ks 0.89999997615814208 0.89999997615814208 0.89999997615814208
+	Ns 1.99999991737041888
+	map_Kd tracks_diff.jpg
+	map_Kn tracks_normal.jpg
+	map_Ks tracks_spec.jpg
