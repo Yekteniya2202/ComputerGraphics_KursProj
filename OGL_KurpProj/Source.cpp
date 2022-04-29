@@ -20,6 +20,8 @@
 #include "ParticleSystem.h"
 #include "Tank.h"
 
+ModelTransform modelTrans;
+Model* backpack;
 
 struct Color {
 	float r, g, b, a;
@@ -50,14 +52,66 @@ double xPress, yPress, xRelease, yRelease;
 float koef = 1.8611f;
 void mouse_callback(GLFWwindow* win, int button, int action, int mods)
 {
+	static Shader* selecting_shader = new Shader("shaders\\colorSelect.vert", "shaders\\colorSelect.frag");
 	if (button == GLFW_MOUSE_BUTTON_LEFT) {
 		if (GLFW_PRESS == action)
 			glfwGetCursorPos(win, &xPress, &yPress);
-		else if (GLFW_RELEASE == action)
+		else if (GLFW_RELEASE == action) {
+			glClearColor(background.r, background.g, background.b, background.a);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glfwGetCursorPos(win, &xRelease, &yRelease);
+			glm::mat4 p = camera.GetProjectionMatrix();
+			glm::mat4 v = camera.GetViewMatrix();
+			glm::mat4 pv = p * v;
+			glm::mat4 model = glm::mat4(1.0f);
 
+			for (auto& kv2 : tanks) {
+				kv2.TransInfo(&modelTrans);
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, modelTrans.position);
+				model = glm::rotate(model, glm::radians(modelTrans.rotation.y), glm::vec3(0.f, 1.f, 0.f));
+				model = glm::scale(model, modelTrans.scale);
+				selecting_shader->use();
+				auto pvm = pv * model;
+				int i = kv2.GetId();
+				int r = (i & 0x000000FF) >> 0;
+				int g = (i & 0x0000FF00) >> 8;
+				int b = (i & 0x00FF0000) >> 16;
+				selecting_shader->setMatrix4F("pvm", pvm);
+				selecting_shader->setVec4("PickingColor", r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
+				backpack->Draw(selecting_shader);
+			}
+			glFlush();
+			glFinish();
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			GLint viewport[4];
+
+			glGetIntegerv(GL_VIEWPORT, viewport);
+			
+			for (auto& tank : tanks) {
+				tank.setNotSelected();
+			}
+			int width = fabs(xRelease - xPress);
+			int height = fabs(yRelease - yPress);
+			unsigned char* data = new unsigned char[width * height * 4];
+			glReadPixels(xPress, viewport[3] - yPress, width, height, GL_RGBA, GL_UNSIGNED_BYTE, (void*)data);
+			for (int i = 0; i < width * height * 4; i += 4) {
+				int pickedID = data[i] + data[i + 1] * 256 + data[i + 2] * 256 * 256;
+				for (auto& tank : tanks) {
+					tank.setSelected(pickedID);
+				}
+			}
+
+
+			delete[] data;
+
+			glClearColor(background.r, background.g, background.b, background.a);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
 	}
 }
+
+
 void processInput(GLFWwindow* win, double dt)
 {
 	if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -198,6 +252,8 @@ int main()
 	glFrontFace(GL_CCW);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
+
+	backpack = new Model("models/tank/tank.obj", true);
 #pragma endregion
 
 	int box_width, box_height, channels;
@@ -335,9 +391,8 @@ int main()
 #pragma endregion
 
 	Shader* light_shader = new Shader("shaders\\light.vert", "shaders\\light.frag");
-	Shader* selecting_shader = new Shader("shaders\\colorSelect.vert", "shaders\\colorSelect.frag");
 	Shader* backpack_shader = new Shader("shaders\\backpack.vert", "shaders\\backpack.frag");
-	Model backpack("models/tank/tank.obj", true);
+	
 	Model ground("models/ground2/lowpoly_floor.obj", false);
 	//Model backpack("models/nordic-chair/Furniture_Chair_0.obj", false);
 	//Model chair("models/chair/chair.obj", false);
@@ -359,7 +414,7 @@ int main()
 	int total_lights = 4;
 	int active_lights = 0;
 
-	redLamp = new Light("LampRed", true);
+	redLamp = new Light("LampRed", false);
 	redLamp->initLikePointLight(
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.1f, 0.1f, 0.1f),
@@ -376,6 +431,7 @@ int main()
 		glm::vec3(1.0f, 0.2f, 1.0f),
 		1.0f, 0.1f, 0.09f);
 	lights.push_back(blueLamp);
+
 
 	sunLight = new Light("Sun", true);
 	sunLight->initLikeDirectionalLight(
@@ -400,7 +456,7 @@ int main()
 #pragma endregion
 
 #pragma region TANK INITIALIZATION
-	ModelTransform modelTrans;
+	
 	tanks.push_back(Tank(0.2f, 0));
 	tanks.push_back(Tank(0.6f, 0));
 	tanks.push_back(Tank(1.0f, 0));
@@ -435,8 +491,7 @@ int main()
 		redLamp->position.z = 0.1f * cos(newTime*2); 
 		redLamp->position.y = 0.1f * sin(newTime*2);
 
-		modelTrans.position.z = 0.5f * cos(newTime * 2);
-		modelTrans.position.x = 0.5f * sin(newTime * 2);
+		
 
 		blueLamp->position.x = 0.2f;
 		blueLamp->position.z = 0.1f * cos(newTime*2 + glm::pi<float>());
@@ -458,83 +513,7 @@ int main()
 
 
 		// DRAWING BACKPACK SELECTING
-		if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-			for (auto& kv2 : tanks) {
-				kv2.TransInfo(&modelTrans);
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, modelTrans.position);
-				model = glm::rotate(model, glm::radians(modelTrans.rotation.y), glm::vec3(0.f, 1.f, 0.f));
-				model = glm::scale(model, modelTrans.scale);
-				selecting_shader->use();
-				auto pvm = pv * model;
-				int i = kv2.GetId();
-				int r = (i & 0x000000FF) >> 0;
-				int g = (i & 0x0000FF00) >> 8;
-				int b = (i & 0x00FF0000) >> 16;
-				selecting_shader->setMatrix4F("pvm", pvm);
-				selecting_shader->setVec4("PickingColor", r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
-				backpack.Draw(selecting_shader);
-			}
-			glFlush();
-			glFinish();
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			GLint viewport[4];
-
-			glGetIntegerv(GL_VIEWPORT, viewport);
-			//cout << x << " " << y << endl;
-			unsigned char data[4];
-			glReadPixels(xPress, viewport[3] - yPress, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
-			int pickedID = data[0] + data[1] * 256 + data[2] * 256 * 256;
-			if (pickedID == 0x00FFFFFF) {
-				for (auto& kv2 : tanks) {
-					kv2.setNotSelected();
-				}
-			}
-			else {
-				for (auto& kv2 : tanks) {
-					kv2.setNotSelected();
-				}
-				for (auto& kv2 : tanks) {
-					kv2.setSelected(pickedID);
-					//cout << "Selected " << pickedID << endl;
-				}
-			}
-
-
-			/*
-			int width = fabs(xRelease - xPress);
-			int height = fabs(yRelease - yPress);
-			unsigned char** data = new unsigned char*[width * height];
-			for (int i = 0; i < width * height; i++){
-				data[i] = new unsigned char[4];
-			}
-			glReadPixels(xPress, viewport[3] - yPress, width, height, GL_RGBA, GL_UNSIGNED_BYTE_2_3_3_REV, (void *)data);
-			for (int i = 0; i < width * height; i++) {
-				int pickedID = data[i][0] + data[i][1] * 256 + data[i][2] * 256 * 256;
-				if (pickedID == 0x00000000) {
-					for (auto& kv2 : tanks) {
-						kv2.setNotSelected();
-					}
-				}
-				else {
-					for (auto& kv2 : tanks) {
-						kv2.setNotSelected();
-					}
-					for (auto& kv2 : tanks) {
-						kv2.setSelected(pickedID);
-						cout << "Selected " << pickedID << endl;
-					}
-				}
-			}
-			
-			for (int i = 0; i < width * height; i++) {
-				delete[] data[i];
-			}
-			delete[] data;
-			*/
-			glClearColor(background.r, background.g, background.b, background.a);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		}
+		
 
 
 		
@@ -562,6 +541,14 @@ int main()
 		light_shader->setVec3("lightColor", glm::vec3(0.2f, 0.2f, 1.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
+		backpack_shader->use();
+		active_lights = 0;
+		for (int i = 0; i < lights.size(); i++)
+		{
+			active_lights += lights[i]->putInShader(backpack_shader, active_lights);
+		}
+		backpack_shader->setInt("lights_count", active_lights);
+
 		
 		for (auto& kv2 : tanks) {
 			kv2.TransInfo(&modelTrans);
@@ -571,23 +558,25 @@ int main()
 			model = glm::rotate(model, glm::radians(modelTrans.rotation.y), glm::vec3(0.f, 1.f, 0.f));
 			model = glm::scale(model, modelTrans.scale);
 
-			backpack_shader->use();
+			
 			backpack_shader->setMatrix4F("pv", pv);
 			backpack_shader->setMatrix4F("model", model);
 			backpack_shader->setFloat("shininess", 64.0f);
 			backpack_shader->setVec3("viewPos", camera.Position);
-			active_lights = 0;
-			for (int i = 0; i < lights.size(); i++)
-			{
-				active_lights += lights[i]->putInShader(backpack_shader, active_lights);
-			}
-			backpack_shader->setInt("lights_count", active_lights);
-
-			backpack.Draw(backpack_shader);
+			backpack->Draw(backpack_shader);
 		}
 
-		for (int i = -5; i < 5; i++) {
-			for (int j = -5; j < 5; j++) {
+
+		backpack_shader->use();
+		active_lights = 0;
+		for (int i = 0; i < lights.size(); i++)
+		{
+			active_lights += lights[i]->putInShader(backpack_shader, active_lights);
+		}
+		backpack_shader->setInt("lights_count", active_lights);
+
+		for (int i = -10; i < 10; i++) {
+			for (int j = -10; j < 10; j++) {
 				groundTrans.position = glm::vec3(i * koef, 0, j * koef);
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, groundTrans.position);
@@ -600,11 +589,7 @@ int main()
 				backpack_shader->setMatrix4F("model", model);
 				backpack_shader->setFloat("shininess", 64.0f);
 				backpack_shader->setVec3("viewPos", camera.Position);
-				for (int i = 0; i < lights.size(); i++)
-				{
-					active_lights += lights[i]->putInShader(backpack_shader, active_lights);
-				}
-				backpack_shader->setInt("lights_count", active_lights);
+				
 				ground.Draw(backpack_shader);
 			}
 		}

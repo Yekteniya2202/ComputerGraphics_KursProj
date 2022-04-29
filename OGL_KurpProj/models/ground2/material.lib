@@ -3,8 +3,8 @@
 # File created: 04/25/2022 18:49:48
 
 newmtl dx11Shader3
-	Ka 0.2 0.2 0.2
-	Kd 0.8 0.8 0.8
+	Ka 0.1 0.1 0.1
+	Kd 0.6 0.6 0.6
 	d 1
 	Tr 0
 	illum 2
