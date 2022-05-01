@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{324165e4-78bb-4b66-9e24-17155c57f8da}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -42,6 +45,12 @@
     <ClCompile Include="Mesh.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="Picker.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Missil.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Mesh.h">
@@ -68,5 +77,46 @@
     <ClInclude Include="Light.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="Source.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Picker.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Missil.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\backpack.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\backpack.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\colorSelect.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\colorSelect.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\light.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\light.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\particle.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\particle.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\picker.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\picker.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

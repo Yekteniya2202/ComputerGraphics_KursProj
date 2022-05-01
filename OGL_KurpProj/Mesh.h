@@ -30,6 +30,29 @@ struct Texture {
     aiString path;
 };
 
+struct HitBox {
+    float xMin = 20.0f, yMin = 20.0f, zMin = 20.0f;
+    float xMax = -20.0f, yMax = -20.0f, zMax = -20.0f;
+
+    bool lessThenX(HitBox& other) {
+        return xMin < other.xMin;
+    }
+
+    bool lessThenY(HitBox& other) {
+        return yMin < other.yMin;
+    }
+
+    bool lessThenZ(HitBox& other) {
+        return zMin < other.zMin;
+    }
+
+    void scale(float scale) {
+        xMin *= scale; yMin *= scale; zMin *= scale;        
+        xMax *= scale; yMax *= scale; zMax *= scale;
+    }
+
+
+};
 class Mesh {
 public:
     vector<Vertex>       vertices;
@@ -41,6 +64,7 @@ public:
 
     void Draw(Shader* shader);
 
+    HitBox getHitBox();
 private:
     unsigned int VBO, EBO;
 

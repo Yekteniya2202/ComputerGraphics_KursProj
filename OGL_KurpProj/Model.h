@@ -35,7 +35,7 @@ public:
 
     Model(string const& path, bool isUV_flipped = true, bool gamma = false);
     void Draw(Shader* shader);
-
+    HitBox getHitBox();
 private:
     void loadModel(string const& path, bool isUV_flipped);
     void processNode(aiNode* node, const aiScene* scene);

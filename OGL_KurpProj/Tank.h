@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
+#include "Missil.h"
 using namespace std;
 namespace TankIds {
 
@@ -33,10 +34,10 @@ private:
 	glm::vec3 dir = glm::vec3(sin(glm::radians(yaw)), 0, cos(glm::radians(yaw)));
 	float x = 0, y = 0, z = 0;
 	float scale = 0.001f;
-	float speed = 2.0f;
+	float speed = 0.5f;
 	float rotationSpeed = 1.f;
 	float angle = 0;
-	bool selected = false;;
+	bool selected = false;
 	float deltaTime;
 	int id;
 	
@@ -51,7 +52,21 @@ public:
 	Tank(float x, float z, float scale, float speed, float RotationSpeed) : x(x), z(z), scale(scale), speed(speed), rotationSpeed(RotationSpeed) {}
 
 	
+	bool getSelected() {
+		return selected;
+	}
 
+	glm::vec3 getDir() {
+		return dir;
+	}
+
+	float getYaw() {
+		return yaw;
+	}
+
+	float getScale() {
+		return scale;
+	}
 	void setSelected(int id) {
 		if (id == this->id) selected = true;
 	}
@@ -61,8 +76,8 @@ public:
 	}
 	void Rotate(int dir, float delta) {
 		if (selected) {
-			yaw += 1;
-			auto dirDelta = dir * delta;
+			yaw += 1 * dir;
+			auto dirDelta = delta;
 			this->dir = glm::normalize(glm::vec3(dirDelta * sin(glm::radians(yaw)), 0, dirDelta * cos(glm::radians(yaw))));
 		}
 		
@@ -72,6 +87,12 @@ public:
 		if (selected) {
 			pos += delta * speed * dir;
 		}
+	}
+
+	Missil shoot() {
+		
+		return Missil(dir, pos, 10.0f);
+		
 	}
 
 	void TransInfo(ModelTransform* trans) {

@@ -147,8 +147,10 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="Missil.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="Picker.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="Tank.cpp" />
@@ -157,11 +159,26 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Missil.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ParticleSystem.h" />
+    <ClInclude Include="Picker.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="Source.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Tank.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\backpack.frag" />
+    <None Include="shaders\backpack.vert" />
+    <None Include="shaders\colorSelect.frag" />
+    <None Include="shaders\colorSelect.vert" />
+    <None Include="shaders\light.frag" />
+    <None Include="shaders\light.vert" />
+    <None Include="shaders\particle.frag" />
+    <None Include="shaders\particle.vert" />
+    <None Include="shaders\picker.frag" />
+    <None Include="shaders\picker.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
