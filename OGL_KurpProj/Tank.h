@@ -38,6 +38,7 @@ private:
 	float rotationSpeed = 1.f;
 	float angle = 0;
 	bool selected = false;
+	bool shooting = false;
 	float deltaTime;
 	int id;
 	
@@ -66,6 +67,18 @@ public:
 
 	float getScale() {
 		return scale;
+	}
+	bool getShooting() {
+		return shooting;
+	}
+	void setShooting() {
+		if (selected) {
+			shooting = true;
+		}
+	}
+	void setNotShooting() {
+		shooting = false;
+		
 	}
 	void setSelected(int id) {
 		if (id == this->id) selected = true;

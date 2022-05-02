@@ -31,6 +31,7 @@ float koef = 1.8611f;
 int width = 1280, height = 720;
 Picker* picker;
 bool renderTankParticle = false;
+bool renderTankTracer = false;
 MissilRejected rejected;
 struct Color {
 	float r, g, b, a;
@@ -199,17 +200,26 @@ void processInput(GLFWwindow* win, double dt)
 	if (glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS) {
 		for (auto& tank : tanks) {
 			tank.Move(dt);
+			renderTankParticle = true;
 		}
 	}
 
 	if (glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS) {
 		for (auto& tank : tanks) {
 			if (tank.getSelected()) {
-				rejected.addMissil(tank.shoot());
+				tank.setShooting();
+				//rejected.addMissil(tank.shoot());
 			}
 		}
 	}
-
+	if (glfwGetKey(win, GLFW_KEY_V) == GLFW_RELEASE) {
+		for (auto& tank : tanks) {
+			if (tank.getSelected()) {
+				tank.setNotShooting();
+				//rejected.addMissil(tank.shoot());
+			}
+		}
+	}
 	if (glfwGetKey(win, GLFW_KEY_P) == GLFW_PRESS)
 	{
 		cout << camera.Position.x << " " << camera.Position.y << " " << camera.Position.z << endl;
@@ -477,8 +487,10 @@ int main()
 	particle_shader = new Shader("shaders\\particle.vert", "shaders\\particle.frag");
 	Model ground("models/ground2/lowpoly_floor.obj", false);
 	picker = new Picker();
-	ParticleGenerator pg(particle_shader, "textures/smoke", "blackSmoke", 5000, 5.0f, 0.01f,  23);
-	ParticleGenerator pg_tr(particle_shader, "textures/fire", "pngwing", 500, 0.02f, 0.001f, 1);
+	ParticleGenerator pg(particle_shader, "textures/smoke", "blackSmoke", 5000, 7.0f, 0.01f, 23);
+	ParticleGenerator pg_smoke(particle_shader, "textures/fire", "pngwing", 50000, 8.0f, 0.01f, 1);
+	ParticleGenerator pg_snow(particle_shader, "textures/snow", "pngwing", 50000, 10.0f, 0.005f, 1);
+	ParticleGenerator pg_tracer(particle_shader, "textures/fire", "pngwing", 500, 3.0f, 0.01f, 1);
 	HitBox hb = backpack->getHitBox();
 	hb.scale(0.001f);
 	//Model backpack("models/nordic-chair/Furniture_Chair_0.obj", false);
@@ -642,10 +654,9 @@ int main()
 		active_lights = 0;
 
 
-		rejected.Update(deltaTime);
-		vector<Missil> reject = rejected.getRejected();
 
-		
+
+
 
 
 		// Red lamp over the tank
@@ -664,32 +675,115 @@ int main()
 			}
 		}
 
-		
+
+
+		rejected.Update(deltaTime);
+		vector<Missil> reject = rejected.getRejected();
 		//drawing tracer
 		for (Missil& missil : reject) {
-			glm::vec3 velocity = missil.getVelocity();
-			velocity.x *= -0.01f;
-			velocity.z *= -0.01f;
-			particleTracerTrans.position = missil.getPosition();
-			pg_tr.Update(deltaTime, particleTracerTrans.position, velocity, 5, glm::vec3(0.f, 0.1f, 0.f));
-			pg_tr.Draw(pv);
-		}
+			auto vel_law = [&]() {
+				glm::vec3 velocity = missil.getVelocity();
+				velocity.x *= -0.01f;
+				velocity.z *= -0.01f;
+				return velocity;
+			};
 
+			auto off_law = [&]() {
+				return glm::vec3(0.0f, 0.1f, 0.0f);
+			};
+			particleTracerTrans.position = missil.getPosition();
+			pg_tracer.Update(deltaTime, particleTracerTrans.position, 10, vel_law, off_law);
+			pg_tracer.Draw(pv);
+		};
+
+
+		//shootings
+		/*
+		for (auto& kv2 : tanks) {
+
+			glm::vec3 dir = kv2.getDir();
+
+			float scale = kv2.getScale();
+			float yaw = kv2.getYaw();
+			kv2.TransInfo(&modelTrans);
+			auto vel_law = [&]() {
+				glm::vec3 velocity = dir;
+				velocity.x += sin(glm::radians(yaw + ((rand() % 90) - 45)));
+				velocity.z += cos(glm::radians(yaw + ((rand() % 90) - 45)));
+				velocity.x *= 0.01f;
+				velocity.z *= 0.01f;
+				velocity.y = -0.01f;
+				return velocity;
+				return velocity;
+			};
+
+			auto off_law = [&]() {
+
+				return glm::vec3(hb.xMax * dir.x * scale, 0.2f, dir.z * scale);
+			};
+			particleTracerTrans.position = modelTrans.position;
+			int newParticles = 0;
+			if (kv2.getShooting())
+				newParticles = 50;
+			pg_tracer.Update(deltaTime, particleTracerTrans.position, newParticles, vel_law, off_law);
+			pg_tracer.Draw(pv);
+
+
+		}*/
+
+		/*
+		float g = 0.98f;
+		auto vel_law = [&]() {
+			glm::vec3 velocity = glm::vec3(random(-0.05, 0.05), 0.5f + (deltaTime * -g), random(-0.05, 0.05));
+			return velocity;
+		};
+
+		auto off_law = [&]() {
+			return glm::vec3(random(-0.05, 0.05), 0, random(-0.05, 0.05));
+		};
+		pg_smoke.Update(deltaTime, glm::vec3(0,0,0), 100, vel_law, off_law);
+		pg_smoke.Draw(pv);
+		*/
+		
+		float g = 0.98f;
+		auto vel_law = [&]() {
+			glm::vec3 velocity = glm::vec3(random(-0.05, 0.05), -0.5, random(-0.05, 0.05));
+			return velocity;
+		};
+
+		auto off_law = [&]() {
+			return glm::vec3(random(-3, 3), 1, random(-3, 3));
+		};
+		pg_snow.Update(deltaTime, glm::vec3(0, 0, 0), 100, vel_law, off_law);
+		pg_snow.Draw(pv);
+		
 		for (auto& kv2 : tanks) {
 			kv2.TransInfo(&modelTrans);
 
-			float yaw = kv2.getYaw();
-			glm::vec3 dir = kv2.getDir();
-			glm::vec3 velocity = dir;
-			velocity.x += sin(glm::radians(yaw + ((rand() % 60) - 30)));
-			velocity.z += cos(glm::radians(yaw + ((rand() % 60) - 30)));
-			glm::vec3 offset = glm::vec3(random(hb.xMin, hb.xMax) * dir.x, 0, random(hb.zMin, hb.zMax) * dir.z);
-			velocity.x *= -0.01f;
-			velocity.z *= -0.01f;
-			velocity.y = 0.01f;
-			particleTrans.position = modelTrans.position;
 
-			pg.Update(deltaTime, particleTrans.position, velocity, 10, offset);
+			float yaw = kv2.getYaw();
+			float scale = kv2.getScale();
+			glm::vec3 dir = kv2.getDir();
+
+
+			auto vel_law = [&]() {
+				glm::vec3 velocity = dir;
+				velocity.x += sin(glm::radians(yaw + ((rand() % 60) - 30)));
+				velocity.z += cos(glm::radians(yaw + ((rand() % 60) - 30)));
+				velocity.x *= -0.01f;
+				velocity.z *= -0.01f;
+				velocity.y = 0.01f;
+				return velocity;
+			};
+
+			auto off_law = [&]() {
+				return glm::vec3(random(hb.xMin, hb.xMax) * dir.x, 0, random(hb.zMin, hb.zMax) * dir.z);
+			};
+			particleTrans.position = modelTrans.position;
+			int newPart = 0;
+			if (renderTankParticle)
+				newPart = 5;
+			pg.Update(deltaTime, particleTrans.position, newPart, vel_law, off_law);
 			pg.Draw(pv);
 		}
 

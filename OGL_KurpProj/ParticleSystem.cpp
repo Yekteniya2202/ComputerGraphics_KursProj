@@ -2,6 +2,7 @@
 #include "Shader.h"
 #include <thread>
 #include "stb_image.h"
+#include <functional>
 /*******************************************************************
 ** This code is part of Breakout.
 **
@@ -12,20 +13,29 @@
 ******************************************************************/
 
 ParticleGenerator::ParticleGenerator(Shader* shader, string directory, string name, unsigned int amount, float life, float scale, int ages)
+    : shader(shader), amount(amount), life(life), scale(scale), ages(ages)
+{
+    this->init(directory, name);
+}
+
+ParticleGenerator::ParticleGenerator(Shader* shader, unsigned int amount, float life, float scale, int ages)
     : shader(shader), amount(amount), life(life), ages(ages)
 {
-    this->init(life, scale, directory, name);
+    this->init("", "");
 }
 
 
 
 
-void ParticleGenerator::Update(float dt, glm::vec3 object, glm::vec3 velocity, unsigned int newParticles, glm::vec3 offset)
+void ParticleGenerator::Update(float dt, glm::vec3 object, unsigned int newParticles, std::function<glm::vec3()> vel_law, std::function<glm::vec3()> off_law)
 {
+    
     // add new particles 
     for (unsigned int i = 0; i < newParticles; ++i)
     {
         int unusedParticle = this->firstUnusedParticle();
+        glm::vec3 velocity = vel_law();
+        glm::vec3 offset = off_law();
         this->respawnParticle(this->particles[unusedParticle], object, velocity, offset);
     }
     // update all particles
@@ -35,8 +45,16 @@ void ParticleGenerator::Update(float dt, glm::vec3 object, glm::vec3 velocity, u
         Particle& p = this->particles[i];
         
         p.Life -= dt; // reduce life
+        
+        if (p.Position.y < -0.3f) {
+            p.Life = 0;
+        }
+        if (p.Color.a < 0.3f) {
+            p.Life = 0;
+        }
         if (p.Life > 0.0f)
         {	// particle is alive, thus update
+            //p.Velocity += vel_law() * dt;
             p.Position += p.Velocity * dt;
             p.Color.a = p.Life / life;
             if (p.Life > lifeBorder * p.Age) {
@@ -68,9 +86,10 @@ void ParticleGenerator::Draw(glm::mat4 pv)
             this->shader->setInt("sprite1", particle.Age + 1);
 
             //cout << (texture_stages[particle.Age].type + number).c_str() << endl;
-            glBindTexture(GL_TEXTURE_2D, texture_stages[particle.Age].id);
+            if (texture_stages.empty() == false)
+                glBindTexture(GL_TEXTURE_2D, texture_stages[particle.Age].id);
             glBindVertexArray(this->VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 36);
             glBindVertexArray(0);
 
         }
@@ -80,7 +99,7 @@ void ParticleGenerator::Draw(glm::mat4 pv)
     
 }
 
-void ParticleGenerator::init(float life, float scale, string directory, string name)
+void ParticleGenerator::init(string directory, string name)
 {
     // set up mesh and attribute properties
     unsigned int VBO;
@@ -143,11 +162,15 @@ void ParticleGenerator::init(float life, float scale, string directory, string n
     glEnableVertexAttribArray(1);
     glBindVertexArray(0);
 
-    loadTextureStages(directory, name);
+    if(!directory.empty() && !name.empty())
+        loadTextureStages(directory, name);
     // create this->amount default particle instances
     for (unsigned int i = 0; i < this->amount; ++i)
         this->particles.push_back(Particle(life, scale, rand() % ages));
 }
+
+
+
 
 void ParticleGenerator::loadTextureStages(string directory, string name)
 {
@@ -220,14 +243,10 @@ unsigned int ParticleGenerator::firstUnusedParticle()
 
 void ParticleGenerator::respawnParticle(Particle& particle, glm::vec3& object, glm::vec3& velocity, glm::vec3 offset)
 {
-    float randomX = ((rand() % 10) - 50) / 10.0f;
-    float randomY = ((rand() % 10) - 50) / 10.0f;
-    float randomZ = ((rand() % 10) - 50) / 10.0f;
-    glm::vec3 random(randomX, randomY, randomZ);
     float rColor = 0.5f + ((rand() % 100) / 100.0f);
     particle.Position = object + offset;
     particle.Color = glm::vec4(rColor, rColor, rColor, 1);
-    particle.Life = LIFE;
+    particle.Life = life;
     particle.Age = 0;
     particle.Velocity = velocity;
 }

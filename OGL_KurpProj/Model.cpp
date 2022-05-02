@@ -28,19 +28,19 @@ HitBox Model::getHitBox()
 	HitBox hb = meshes[0].getHitBox();
 	for (unsigned int i = 1; i < meshes.size(); i++) {
 		HitBox mhb = meshes[i].getHitBox();
-		if (hb.lessThenX(mhb))
-			hb.xMin = mhb.xMin;
 		if (!hb.lessThenX(mhb))
+			hb.xMin = mhb.xMin;
+		if (hb.lessThenX(mhb))
 			hb.xMax = mhb.xMax;
 
-		if (hb.lessThenY(mhb))
-			hb.yMin = mhb.yMin;
 		if (!hb.lessThenY(mhb))
+			hb.yMin = mhb.yMin;
+		if (hb.lessThenY(mhb))
 			hb.yMax = mhb.yMax;
 
-		if (hb.lessThenZ(mhb))
-			hb.zMin = mhb.zMin;
 		if (!hb.lessThenZ(mhb))
+			hb.zMin = mhb.zMin;
+		if (hb.lessThenZ(mhb))
 			hb.zMax = mhb.zMax;
 	}
 	return hb;

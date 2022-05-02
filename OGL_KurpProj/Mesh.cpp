@@ -53,22 +53,22 @@ HitBox Mesh::getHitBox()
 {
 	HitBox hb;
 	for (auto& vertex : vertices) {
-		if (vertex.Position.x < hb.xMax) {
+		if (vertex.Position.x > hb.xMax) {
 			hb.xMax = vertex.Position.x;
 		}
-		if (vertex.Position.x > hb.xMin) {
+		if (vertex.Position.x < hb.xMin) {
 			hb.xMin = vertex.Position.x;
 		}
-		if (vertex.Position.y < hb.yMax) {
+		if (vertex.Position.y > hb.yMax) {
 			hb.yMax = vertex.Position.y;
 		}
-		if (vertex.Position.y > hb.yMin) {
+		if (vertex.Position.y < hb.yMin) {
 			hb.yMin = vertex.Position.y;
 		}
-		if (vertex.Position.z < hb.zMax) {
+		if (vertex.Position.z > hb.zMax) {
 			hb.zMax = vertex.Position.z;
 		}
-		if (vertex.Position.z > hb.zMin) {
+		if (vertex.Position.z < hb.zMin) {
 			hb.zMin = vertex.Position.z;
 		}
 	}

@@ -31,8 +31,8 @@ struct Texture {
 };
 
 struct HitBox {
-    float xMin = 20.0f, yMin = 20.0f, zMin = 20.0f;
-    float xMax = -20.0f, yMax = -20.0f, zMax = -20.0f;
+    float xMin = 2000.0f, yMin = 2000.0f, zMin = 2000.0f;
+    float xMax = -2000.0f, yMax = -2000.0f, zMax = -2000.0f;
 
     bool lessThenX(HitBox& other) {
         return xMin < other.xMin;

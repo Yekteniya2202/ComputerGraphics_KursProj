@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include "Mesh.h"
+#include <functional>
 #define LIFE 5.0f
 // Represents a single particle and its state
 struct Particle {
@@ -25,10 +26,12 @@ class ParticleGenerator
 {
 public:
     // constructor
+    ParticleGenerator(Shader* shader, unsigned int amount, float life, float scale, int ages);
     ParticleGenerator(Shader* shader, string directory, string name, unsigned int amount, float life, float scale, int ages);
     // update all particles
     void Update(float dt, glm::vec3 object, glm::vec3 velocity, unsigned int newParticles, glm::vec3 offset = glm::vec3(0.0f, 0.0f, 0.0f));
     void Update(float dt, glm::vec3& object, unsigned int newParticles, glm::vec3 offset = glm::vec3(0.0f, 0.0f, 0.0f));
+    void Update(float dt, glm::vec3 object, unsigned int newParticles, std::function<glm::vec3()> vel_law, std::function<glm::vec3()> off_law);
     // render all particles
     void Draw(glm::mat4 pv);
 private:
@@ -38,14 +41,14 @@ private:
     unsigned int amount;
     int ages;
     float life;
+    float scale;
     unsigned int lastUsedParticle = 0;
     // render state
     Shader* shader;
     unsigned int VAO;
     // initializes buffer and vertex attributes
     void init();
-    void init(float life, string directory, string name);
-    void init(float life, float scale, string directory, string name);
+    void init(string directory, string name);
     void loadTextureStages(string path, string filename);
     // returns the first Particle index that's currently unused e.g. Life <= 0.0f or 0 if no particle is currently inactive
     unsigned int firstUnusedParticle();
