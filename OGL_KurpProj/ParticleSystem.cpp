@@ -18,6 +18,15 @@ ParticleGenerator::ParticleGenerator(Shader* shader, string directory, string na
     this->init(directory, name);
 }
 
+
+
+ParticleGenerator::ParticleGenerator(Shader* shader, string directory, string name, unsigned int amount, float life, float scale, int ages, glm::vec3 color)
+    : shader(shader), amount(amount), life(life), scale(scale), ages(ages), color(color)
+{
+    this->init(directory, name);
+}
+
+
 ParticleGenerator::ParticleGenerator(Shader* shader, unsigned int amount, float life, float scale, int ages)
     : shader(shader), amount(amount), life(life), ages(ages)
 {
@@ -90,7 +99,7 @@ void ParticleGenerator::Update(float dt, glm::vec3 object, unsigned int newParti
         if (p.Position.y < -0.3f) {
             p.Life = 0;
         }
-        if (p.Color.a < 0.3f) {
+        if (p.Color.a < 0.4f) {
             p.Life = 0;
         }
         if (p.Life > 0.0f)
@@ -120,6 +129,11 @@ void ParticleGenerator::Draw(glm::mat4 pv)
             string number = to_string(particle.Age + 1);
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, particle.Position);
+
+
+            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.f, 0.f, 0.f));
+            model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.f, 1.0f, 0.f));
+
             model = glm::scale(model, particle.Scale);
             this->shader->setMatrix4F("pv", pv);
             this->shader->setMatrix4F("model", model);
@@ -130,52 +144,15 @@ void ParticleGenerator::Draw(glm::mat4 pv)
             if (texture_stages.empty() == false)
                 glBindTexture(GL_TEXTURE_2D, texture_stages[particle.Age].id);
             glBindVertexArray(this->VAO);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 36);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
             glBindVertexArray(0);
 
         }
     }
+
     //glDisable(GL_BLEND);
     // don't forget to reset to default blending mode
 
-}
-
-// render all particles
-void ParticleGenerator::Draw(glm::mat4 pv, Camera& camera)
-{
-    // use additive blending to give it a 'glow' effect
-    
-    this->shader->use();
-    for (auto& particle : this->particles)
-    {
-        if (particle.Life > 0.0f)
-        {
-            //cout << particle.Age << endl;
-            glActiveTexture(GL_TEXTURE0 + particle.Age + 1);
-            string number = to_string(particle.Age + 1);
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, particle.Position);
-            model = glm::rotate(model, glm::radians(camera.Front.x), glm::vec3(1.f, 0.f, 0.f));
-            model = glm::rotate(model, glm::radians(camera.Front.y), glm::vec3(0.f, 1.f, 0.f));
-            model = glm::rotate(model, glm::radians(camera.Front.z), glm::vec3(0.f, 0.f, 1.f));
-            model = glm::scale(model, particle.Scale);
-            this->shader->setMatrix4F("pv", pv);
-            this->shader->setMatrix4F("model", model);
-            this->shader->setVec4("color", particle.Color);
-            this->shader->setInt("sprite1", particle.Age + 1);
-
-            //cout << (texture_stages[particle.Age].type + number).c_str() << endl;
-            if (texture_stages.empty() == false)
-                glBindTexture(GL_TEXTURE_2D, texture_stages[particle.Age].id);
-            glBindVertexArray(this->VAO);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 36);
-            glBindVertexArray(0);
-
-        }
-    }
-    //glDisable(GL_BLEND);
-    // don't forget to reset to default blending mode
-    
 }
 
 void ParticleGenerator::init(string directory, string name)
@@ -184,47 +161,13 @@ void ParticleGenerator::init(string directory, string name)
     unsigned int VBO;
     float particle_quad[] = {
         //position			texture		
-    -1.0f,-1.0f,-1.0f,	0.0f, 0.0f,
-    -1.0f,-1.0f, 1.0f,	1.0f, 0.0f,
-    -1.0f, 1.0f, 1.0f,	1.0f, 1.0f,
-    -1.0f,-1.0f,-1.0f,	0.0f, 0.0f,
-    -1.0f, 1.0f, 1.0f,	1.0f, 1.0f,
-    -1.0f, 1.0f,-1.0f,	0.0f, 1.0f,
-
-    1.0f, 1.0f,-1.0f,	0.0f, 1.0f,
-    -1.0f,-1.0f,-1.0f,	1.0f, 0.0f,
-    -1.0f, 1.0f,-1.0f,	1.0f, 1.0f,
-    1.0f, 1.0f,-1.0f,	0.0f, 1.0f,
-    1.0f,-1.0f,-1.0f,	0.0f, 0.0f,
-    -1.0f,-1.0f,-1.0f,	1.0f, 0.0f,
-
-    1.0f,-1.0f, 1.0f,	0.0f, 0.0f,
-    -1.0f,-1.0f,-1.0f,	1.0f, 1.0f,
-    1.0f,-1.0f,-1.0f,	0.0f, 1.0f,
-    1.0f,-1.0f, 1.0f,	0.0f, 0.0f,
-    -1.0f,-1.0f, 1.0f,	1.0f, 0.0f,
-    -1.0f,-1.0f,-1.0f,	1.0f, 1.0f,
-
-    -1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
-    -1.0f,-1.0f, 1.0f,	0.0f, 0.0f,
-    1.0f,-1.0f, 1.0f,	1.0f, 0.0f,
-    1.0f, 1.0f, 1.0f,	1.0f, 1.0f,
-    -1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
-    1.0f,-1.0f, 1.0f,	1.0f, 0.0f,
-
-    1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
-    1.0f,-1.0f,-1.0f,	1.0f, 0.0f,
-    1.0f, 1.0f,-1.0f,	1.0f, 1.0f,
-    1.0f,-1.0f,-1.0f,	1.0f, 0.0f,
-    1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
-    1.0f,-1.0f, 1.0f,	0.0f, 0.0f,
-
-    1.0f, 1.0f, 1.0f,	1.0f, 0.0f,
-    1.0f, 1.0f,-1.0f,	1.0f, 1.0f,
-    -1.0f, 1.0f,-1.0f,	0.0f, 1.0f,
-    1.0f, 1.0f, 1.0f,	1.0f, 0.0f,
-    -1.0f, 1.0f,-1.0f,	0.0f, 1.0f,
-    -1.0f, 1.0f, 1.0f,	0.0f, 0.0f
+        -1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+        1.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+                     
+        -1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
+        1.0f, 1.0f,  0.0f,  1.0f, 1.0f,
+        1.0f, -1.0f, 0.0f,  1.0f, 0.0f
     };
     glGenVertexArrays(1, &this->VAO);
     glGenBuffers(1, &VBO);
@@ -239,7 +182,7 @@ void ParticleGenerator::init(string directory, string name)
 
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
+    //glBindVertexArray(0);
 
     if(!directory.empty() && !name.empty())
         loadTextureStages(directory, name);
@@ -322,10 +265,10 @@ unsigned int ParticleGenerator::firstUnusedParticle()
 
 void ParticleGenerator::respawnParticle(Particle& particle, glm::vec3& object, glm::vec3& velocity, glm::vec3 offset)
 {
-    float rColor = 0.5f + ((rand() % 100) / 100.0f);
+    //float rColor = 0.5f + ((rand() % 100) / 100.0f);
     particle.Position = object + offset;
-    particle.Color = glm::vec4(rColor, rColor, rColor, 1);
+    particle.Color = glm::vec4(color, 1);
     particle.Life = life;
-    particle.Age = 0;
+    particle.Age = rand() % ages;
     particle.Velocity = velocity;
 }

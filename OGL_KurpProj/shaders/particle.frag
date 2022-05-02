@@ -8,7 +8,7 @@ uniform sampler2D sprite1;
 void main()
 {
     vec4 texColor = texture(sprite1, TexCoords) * ParticleColor;
-    if(texColor.a < 0.5)
+    if(texColor.a < 0.3)
         discard;
     color = texColor;
 } 

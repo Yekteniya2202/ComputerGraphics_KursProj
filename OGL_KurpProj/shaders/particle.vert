@@ -12,5 +12,6 @@ void main()
 {
     ParticleColor = color;
     TexCoords = texCoords;
+
     gl_Position = pv * model * vec4(vertex, 1.0);
 }

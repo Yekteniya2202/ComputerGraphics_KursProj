@@ -42,7 +42,7 @@ struct Color {
 };
 
 float windYaw = 0;
-float windPower = 0.1f;
+float windPower = 0.0f;
 glm::vec3 wind = glm::vec3(0,0,0);
 
 Color background = { 1.f, 1.f, 1.f, 1.f };
@@ -502,13 +502,13 @@ int main()
 	particle_shader = new Shader("shaders\\particle.vert", "shaders\\particle.frag");
 	Model ground("models/ground2/lowpoly_floor.obj", false);
 	picker = new Picker();
-	ParticleGenerator pg(particle_shader, "textures/smoke", "blackSmoke", 5000, 7.0f, 0.01f, 23);
-	ParticleGenerator pg_smoke(particle_shader, "textures/fire", "pngwing", 50000, 8.0f, 0.01f, 1);
-	ParticleGenerator pg_snow(particle_shader, "textures/snow", "pngwing", 50000, 10.0f, 0.005f, 1);
-	ParticleGenerator pg_tracer(particle_shader, "textures/fire", "pngwing", 500, 3.0f, 0.01f, 1);
-	ParticleGenerator pg_boom(particle_shader, "textures/fire", "pngwing", 500, 3.0f, 0.005f, 1);
+	ParticleGenerator pg(particle_shader, "textures/smoke", "smoke", 5000, 7.0f, 0.03f, 9, glm::normalize(glm::vec3(10, 10, 10)));
+	ParticleGenerator pg_smoke(particle_shader, "textures/fire", "flame", 50000, 8.0f, 0.01f, 4, glm::normalize(glm::vec3(233, 78, 37)));
+	ParticleGenerator pg_snow(particle_shader, "textures/snow", "pngwing", 50000, 10.0f, 0.005f, 1, glm::normalize(glm::vec3(38, 232, 235))); 
+	ParticleGenerator pg_tracer(particle_shader, "textures/tracer", "trace", 500, 3.0f, 0.01f, 6, glm::normalize(glm::vec3(255, 100, 100)));
+	ParticleGenerator pg_boom(particle_shader, "textures/fire", "flame", 500, 3.0f, 0.05f, 4, glm::normalize(glm::vec3(233, 78, 37)));
 
-	ParticleGenerator pg_fire(particle_shader, "textures/fire", "pngwing", 1000, 2.0f, 0.005f, 1);
+	ParticleGenerator pg_fire(particle_shader, "textures/fire", "flame", 1000, 3.0f, 0.05f, 4, glm::normalize(glm::vec3(233, 78, 37)));
 	HitBox hb = backpack->getHitBox();
 	hb.scale(0.001f);
 	//Model backpack("models/nordic-chair/Furniture_Chair_0.obj", false);
@@ -722,6 +722,8 @@ int main()
 		pg_smoke.Draw(pv);
 		*/
 
+
+
 #ifdef FIRE_PARTICLES
 		float g = 0.98f;
 		auto vel_law = [&]() {
@@ -729,17 +731,17 @@ int main()
 			return velocity;
 		};
 
-		/*
+		
 		auto ass_law = [&]() {
-			glm::vec3 asseleration = glm::vec3(0.7f * cos(newTime * 2 + random(0, glm::pi<float>())), 0.0, 0.7f * sin(newTime * 2 + random(0, glm::pi<float>())));;
+			glm::vec3 asseleration = glm::vec3(random(-0.1f, 0.1f), random(0.0f, 0.3f), random(-0.1f, 0.1f));
 			return asseleration;
 		};
 
-		*/
+		
 		auto off_law =  [&]() {
 			return glm::vec3(0,0,0);
 		};
-		pg_fire.Update(deltaTime, glm::vec3(0, 0, 0), 30, vel_law, off_law);
+		pg_fire.Update(deltaTime, glm::vec3(0, 0, 0), 100, vel_law, ass_law, off_law);
 		pg_fire.Draw(pv);
 
 #endif
@@ -820,9 +822,9 @@ int main()
 			particleTrans.position = modelTrans.position;
 			int newPart = 0;
 			if (renderTankParticle)
-				newPart = 5;
+				newPart = 20;
 			pg.Update(deltaTime, particleTrans.position, newPart, vel_law, off_law);
-			pg.Draw(pv, camera);
+			pg.Draw(pv);
 		}
 #endif
 
