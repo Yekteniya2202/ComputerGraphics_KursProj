@@ -164,7 +164,6 @@
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Picker.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="Source.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Tank.h" />
   </ItemGroup>

@@ -77,9 +77,6 @@
     <ClInclude Include="Light.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Source.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="Picker.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>

@@ -87,6 +87,16 @@ public:
 	void setNotSelected() {
 		selected = false;
 	}
+
+	bool checkMissilCollision(Missil& missil) {
+		glm::vec3 missilPos = missil.getPosition();
+
+		if (missilPos.x < pos.x + 0.05 && missilPos.x > pos.x - 0.05 &&
+			missilPos.z < pos.z + 0.05 && missilPos.z > pos.z - 0.05) {
+			return true;
+		}
+		return false;
+	}
 	void Rotate(int dir, float delta) {
 		if (selected) {
 			yaw += 1 * dir;

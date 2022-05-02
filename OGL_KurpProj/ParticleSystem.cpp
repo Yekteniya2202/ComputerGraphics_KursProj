@@ -27,8 +27,9 @@ ParticleGenerator::ParticleGenerator(Shader* shader, unsigned int amount, float 
 
 
 
-void ParticleGenerator::Update(float dt, glm::vec3 object, unsigned int newParticles, std::function<glm::vec3()> vel_law, std::function<glm::vec3()> off_law)
+void ParticleGenerator::Update(float dt, glm::vec3 object, unsigned int newParticles, std::function<glm::vec3()> vel_law, std::function<glm::vec3()> ass_law, std::function<glm::vec3()> off_law)
 {
+    
     
     // add new particles 
     for (unsigned int i = 0; i < newParticles; ++i)
@@ -55,6 +56,46 @@ void ParticleGenerator::Update(float dt, glm::vec3 object, unsigned int newParti
         if (p.Life > 0.0f)
         {	// particle is alive, thus update
             //p.Velocity += vel_law() * dt;
+            p.Velocity += ass_law() * dt;
+            p.Position += p.Velocity * dt;
+            p.Color.a = p.Life / life;
+            if (p.Life > lifeBorder * p.Age) {
+                //p.Age++;
+            }
+        }
+    }
+}
+
+
+void ParticleGenerator::Update(float dt, glm::vec3 object, unsigned int newParticles, std::function<glm::vec3()> vel_law, std::function<glm::vec3()> off_law)
+{
+
+
+    // add new particles 
+    for (unsigned int i = 0; i < newParticles; ++i)
+    {
+        int unusedParticle = this->firstUnusedParticle();
+        glm::vec3 velocity = vel_law();
+        glm::vec3 offset = off_law();
+        this->respawnParticle(this->particles[unusedParticle], object, velocity, offset);
+    }
+    // update all particles
+    float lifeBorder = life / ages;
+    for (unsigned int i = 0; i < this->amount; ++i)
+    {
+        Particle& p = this->particles[i];
+
+        p.Life -= dt; // reduce life
+
+        if (p.Position.y < -0.3f) {
+            p.Life = 0;
+        }
+        if (p.Color.a < 0.3f) {
+            p.Life = 0;
+        }
+        if (p.Life > 0.0f)
+        {	// particle is alive, thus update
+            //p.Velocity += vel_law() * dt;
             p.Position += p.Velocity * dt;
             p.Color.a = p.Life / life;
             if (p.Life > lifeBorder * p.Age) {
@@ -68,6 +109,41 @@ void ParticleGenerator::Update(float dt, glm::vec3 object, unsigned int newParti
 void ParticleGenerator::Draw(glm::mat4 pv)
 {
     // use additive blending to give it a 'glow' effect
+
+    this->shader->use();
+    for (auto& particle : this->particles)
+    {
+        if (particle.Life > 0.0f)
+        {
+            //cout << particle.Age << endl;
+            glActiveTexture(GL_TEXTURE0 + particle.Age + 1);
+            string number = to_string(particle.Age + 1);
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, particle.Position);
+            model = glm::scale(model, particle.Scale);
+            this->shader->setMatrix4F("pv", pv);
+            this->shader->setMatrix4F("model", model);
+            this->shader->setVec4("color", particle.Color);
+            this->shader->setInt("sprite1", particle.Age + 1);
+
+            //cout << (texture_stages[particle.Age].type + number).c_str() << endl;
+            if (texture_stages.empty() == false)
+                glBindTexture(GL_TEXTURE_2D, texture_stages[particle.Age].id);
+            glBindVertexArray(this->VAO);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 36);
+            glBindVertexArray(0);
+
+        }
+    }
+    //glDisable(GL_BLEND);
+    // don't forget to reset to default blending mode
+
+}
+
+// render all particles
+void ParticleGenerator::Draw(glm::mat4 pv, Camera& camera)
+{
+    // use additive blending to give it a 'glow' effect
     
     this->shader->use();
     for (auto& particle : this->particles)
@@ -79,6 +155,9 @@ void ParticleGenerator::Draw(glm::mat4 pv)
             string number = to_string(particle.Age + 1);
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, particle.Position);
+            model = glm::rotate(model, glm::radians(camera.Front.x), glm::vec3(1.f, 0.f, 0.f));
+            model = glm::rotate(model, glm::radians(camera.Front.y), glm::vec3(0.f, 1.f, 0.f));
+            model = glm::rotate(model, glm::radians(camera.Front.z), glm::vec3(0.f, 0.f, 1.f));
             model = glm::scale(model, particle.Scale);
             this->shader->setMatrix4F("pv", pv);
             this->shader->setMatrix4F("model", model);

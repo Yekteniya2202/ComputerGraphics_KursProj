@@ -6,6 +6,9 @@
 #include <vector>
 #include "Mesh.h"
 #include <functional>
+#include <thread>
+
+#include "Camera.h"
 #define LIFE 5.0f
 // Represents a single particle and its state
 struct Particle {
@@ -33,7 +36,10 @@ public:
     void Update(float dt, glm::vec3& object, unsigned int newParticles, glm::vec3 offset = glm::vec3(0.0f, 0.0f, 0.0f));
     void Update(float dt, glm::vec3 object, unsigned int newParticles, std::function<glm::vec3()> vel_law, std::function<glm::vec3()> off_law);
     // render all particles
+    void Update(float dt, glm::vec3 object, unsigned int newParticles, std::function<glm::vec3()> vel_law, std::function<glm::vec3()> ass_law, std::function<glm::vec3()> off_law);
+    // render all particles
     void Draw(glm::mat4 pv);
+    void Draw(glm::mat4 pv, Camera& camera);
 private:
     // state
     std::vector<Particle> particles;
