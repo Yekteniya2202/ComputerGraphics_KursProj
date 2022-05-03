@@ -1,8 +1,8 @@
-#version 330 core
+#version 460
 
 
 out vec4 outputF;
 
 void main(){
-	outputF = vec4(0.0f, 1.0f, 0.0f, 0.4f);
+	outputF = vec4(0.0f, 1.0f, 0.0f, 1.0f);
 }

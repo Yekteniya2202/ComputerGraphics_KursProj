@@ -1,13 +1,6 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp> 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "common_header.h"
 #include <assimp/Importer.hpp>
-
 #include <filesystem>
 #include <iostream>
 #include <fstream>
@@ -20,8 +13,10 @@
 #include "ParticleSystem.h"
 #include "Tank.h"
 #include "Picker.h"
-
-#define SNOW_PARTICLES
+#include "ParticleSystemTransformFeedback.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+//#define SNOW_PARTICLES
 #define TANK_SMOKE_PARTICLES
 #define TANK_BOOM_PARTICLES
 //#define FIRE_PARTICLES
@@ -102,7 +97,7 @@ void draw_color_picking() {
 	}
 	glFlush();
 	glFinish();
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	//glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
 static void cursor_position_callback(GLFWwindow* win, double xpos, double ypos)
@@ -113,9 +108,18 @@ static void cursor_position_callback(GLFWwindow* win, double xpos, double ypos)
 
 		float x1 = xPress / width * 2 - 1, y1 = -(yPress / height * 2 - 1);
 		float x2 = xCurrent / width * 2 - 1, y2 = -(yCurrent / height * 2 - 1);
-		float ox1 = x1, ox2 = x2, oy1 = y1, oy2 = y2;
-		picker->setPoints(x1, x2, y1, y2);
+		float xWidth = x2 - x1, yWidth = y2 - y1;
+		if (xWidth > 0 && yWidth < 0) {
+			xWidth *= -1; yWidth *= -1;
+		}
+		if (xWidth < 0 && yWidth > 0) {
+			xWidth *= -1; yWidth *= -1;
+		}
 		picking_shader->use();
+		picking_shader->setFloat("x", x1);
+		picking_shader->setFloat("y", y1);
+		picking_shader->setFloat("xWidth", xWidth);
+		picking_shader->setFloat("yWidth", yWidth);
 		picker->draw();
 		glFlush();
 		glFinish();
@@ -202,23 +206,28 @@ void processInput(GLFWwindow* win, double dt)
 		koef -= 0.0001;
 		cout << "koef " << koef << endl;
 	}
-	if (glfwGetKey(win, GLFW_KEY_Z) == GLFW_PRESS) {
+	if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS) {
 		for (auto& tank : tanks) {
 			tank.Rotate(1, dt);
 		}
 	}
-	if (glfwGetKey(win, GLFW_KEY_X) == GLFW_PRESS) {
+	if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS) {
 		for (auto& tank : tanks) {
 			tank.Rotate(-1, dt);
 		}
 	}
-	if (glfwGetKey(win, GLFW_KEY_C) == GLFW_PRESS) {
+	if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS) {
 		for (auto& tank : tanks) {
 			tank.Move(dt);
 			renderTankParticle = true;
 		}
 	}
-
+	if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS) {
+		for (auto& tank : tanks) {
+			tank.Move(-dt);
+			renderTankParticle = true;
+		}
+	}
 	if (glfwGetKey(win, GLFW_KEY_V) == GLFW_PRESS) {
 		for (auto& tank : tanks) {
 			if (tank.getSelected()) {
@@ -249,13 +258,13 @@ void processInput(GLFWwindow* win, double dt)
 	if (glfwGetKey(win, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
 		dir |= CAM_DOWN;
 	*/
-	if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
+	if (glfwGetKey(win, GLFW_KEY_UP) == GLFW_PRESS)
 		dir |= CAM_FORWARD | CAM_UP;
-	if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
+	if (glfwGetKey(win, GLFW_KEY_DOWN) == GLFW_PRESS)
 		dir |= CAM_BACKWARD | CAM_DOWN;
-	if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
+	if (glfwGetKey(win, GLFW_KEY_LEFT) == GLFW_PRESS)
 		dir |= CAM_LEFT;
-	if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
+	if (glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS)
 		dir |= CAM_RIGHT;
 
 	/*
@@ -320,9 +329,9 @@ int main()
 {
 #pragma region WINDOW INITIALIZATION
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
 	GLFWwindow* win = glfwCreateWindow(width, height, "OpenGL Window", NULL, NULL);
 	if (win == NULL)
@@ -351,14 +360,19 @@ int main()
 	glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	UpdatePolygoneMode();
 	glEnable(GL_CULL_FACE);
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	/*
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);*/
 	glFrontFace(GL_CCW);
 
 	backpack = new Model("models/tank/tank.obj", true);
 #pragma endregion
 
-
+	
 #pragma region CUBE INITIALIZATION
 	int box_width, box_height, channels;
 	byte* data = stbi_load("images\\box.png", &box_width, &box_height, &channels, 0);
@@ -493,24 +507,86 @@ int main()
 	glEnableVertexAttribArray(3);
 
 #pragma endregion
-
+	
 
 	light_shader = new Shader("shaders\\light.vert", "shaders\\light.frag");
 	backpack_shader = new Shader("shaders\\backpack.vert", "shaders\\backpack.frag");
 	selecting_shader = new Shader("shaders\\colorSelect.vert", "shaders\\colorSelect.frag");
-	picking_shader = new Shader("shaders\\picker.vert", "shaders\\picker.frag");
+	picking_shader = new Shader("shaders\\picker.vert", "shaders\\picker.geom", "shaders\\picker.frag");
 	particle_shader = new Shader("shaders\\particle.vert", "shaders\\particle.frag");
 	Model ground("models/ground2/lowpoly_floor.obj", false);
 	picker = new Picker();
+	/*
 	ParticleGenerator pg(particle_shader, "textures/smoke", "smoke", 5000, 7.0f, 0.03f, 9, glm::normalize(glm::vec3(10, 10, 10)));
 	ParticleGenerator pg_smoke(particle_shader, "textures/fire", "flame", 50000, 8.0f, 0.01f, 4, glm::normalize(glm::vec3(233, 78, 37)));
 	ParticleGenerator pg_snow(particle_shader, "textures/snow", "pngwing", 50000, 10.0f, 0.005f, 1, glm::normalize(glm::vec3(38, 232, 235))); 
 	ParticleGenerator pg_tracer(particle_shader, "textures/tracer", "trace", 500, 3.0f, 0.01f, 6, glm::normalize(glm::vec3(255, 100, 100)));
 	ParticleGenerator pg_boom(particle_shader, "textures/fire", "flame", 500, 3.0f, 0.05f, 4, glm::normalize(glm::vec3(233, 78, 37)));
+	*/
+	/*
+	int box_width, box_height, channels;
+	byte* data = stbi_load("textures\\magic\\particle.bmp", &box_width, &box_height, &channels, 0);
 
-	ParticleGenerator pg_fire(particle_shader, "textures/fire", "flame", 1000, 3.0f, 0.05f, 4, glm::normalize(glm::vec3(233, 78, 37)));
+	unsigned int box_texture;
+	glGenTextures(1, &box_texture);
+
+	glBindTexture(GL_TEXTURE_2D, box_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	if (channels == 3)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, box_width, box_height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	else
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, box_width, box_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	//glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(data);
+	*/
+
+	//ParticleGenerator pg_fire(particle_shader, "textures/fire", "flame", 1000, 3.0f, 0.05f, 4, glm::normalize(glm::vec3(233, 78, 37)));
 	HitBox hb = backpack->getHitBox();
 	hb.scale(0.001f);
+	
+	CParticleSystemTransformFeedback ps;
+	ps.InitalizeParticleSystem("textures/magic", "magic_05.png");
+
+	CParticleSystemTransformFeedback ps_snow;
+	ps_snow.InitalizeParticleSystem("textures/snow", "pngwing0.png");
+
+
+	CParticleSystemTransformFeedback ps_smoke;
+	ps_smoke.InitalizeParticleSystem("textures/smoke", "smoke0.png");
+
+
+	CParticleSystemTransformFeedback ps_fire;
+	ps_fire.InitalizeParticleSystem("textures/fire", "flame1.png");
+
+	ps.SetGeneratorProperties(
+		glm::vec3(0.0f, 0.0f, 0.0f), // Where the particles are generated
+		glm::vec3(-0.3, 0, -0.3), // Minimal velocity
+		glm::vec3(0.1, 2, 0.1), // Maximal velocity
+		glm::vec3(0, -1, 0), // Gravity force applied to particles
+		glm::vec3(0.0f, 0.5f, 1.0f), // Color (light blue)
+		1.5f, // Minimum lifetime in seconds
+		2.0f, // Maximum lifetime in seconds
+		0.05f, // Rendered size
+		0.000002f, // Spawn every 0.05 seconds
+		30); // And spawn 30 particles
+
+	ps_snow.SetGeneratorProperties(
+		glm::vec3(random(-1.0f, 1.0f), 1.0f, random(-1.0f, 1.0f)), // Where the particles are generated
+		glm::vec3(0, 0.1, 0), // Minimal velocity
+		glm::vec3(0.01, 2, 0.01), // Maximal velocity
+		glm::vec3(0, -1, 0), // Gravity force applied to particles
+		glm::vec3(0.5f, 0.5f, 1.0f), // Color (light blue)
+		1.5f, // Minimum lifetime in seconds
+		2.0f, // Maximum lifetime in seconds
+		0.005f, // Rendered size
+		0.0002f, // Spawn every 0.05 seconds
+		300); // And spawn 30 particles
+	// DRAWING BACKPACK SELECTING
 	//Model backpack("models/nordic-chair/Furniture_Chair_0.obj", false);
 	//Model chair("models/chair/chair.obj", false);
 
@@ -636,14 +712,32 @@ int main()
 		model = glm::translate(model, redLamp->position);
 		model = glm::scale(model, glm::vec3(0.01, 0.01f, 0.01f));
 
+		model = glm::mat4(1.0f);
+		//model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		//model = glm::scale(model, glm::vec3(0.01, 0.01f, 0.01f));
 
+		/*
+		ps.SetMatrices(&p, &v, camera.Position, camera.Front, camera.Up);
+		ps.UpdateParticles(deltaTime);
+		ps.RenderParticles();
+		*/
+		
+		ps_snow.SetGeneratorProperties(
+			glm::vec3(random(-3.0f, 3.0f), 1.5f, random(-3.0f, 3.0f)), // Where the particles are generated
+			glm::vec3(0, -0.01, 0), // Minimal velocity
+			glm::vec3(0, -0.015, 0), // Maximal velocity
+			glm::vec3(0, -0.1, 0), // Gravity force applied to particles
+			glm::vec3(0.7f, 0.7f, 1.0f), // Color (light blue)
+			3.5f, // Minimum lifetime in seconds
+			7.0f, // Maximum lifetime in seconds
+			0.003f, // Rendered size
+			0.0002f, // Spawn every 0.05 seconds
+			5); // And spawn 30 particles
 
-
-		// DRAWING BACKPACK SELECTING
-
-
-
-
+		ps_snow.SetMatrices(&p, &v, camera.Position, camera.Front, camera.Up);
+		ps_snow.UpdateParticles(deltaTime);
+		ps_snow.RenderParticles();
+		
 		// DRAWING LAMPS
 		light_shader->use();
 		light_shader->setMatrix4F("pv", pv);
@@ -668,7 +762,7 @@ int main()
 		light_shader->setVec3("lightColor", glm::vec3(0.2f, 0.2f, 1.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-
+		
 		active_lights = 0;
 
 		// Red lamp over the tank
@@ -747,6 +841,9 @@ int main()
 #endif
 #ifdef TANK_BOOM_PARTICLES
 		for (auto& kv2 : tanks) {
+			int newParticles = 0;
+			if (kv2.getShooting())
+				newParticles = 50;
 
 			glm::vec3 dir = kv2.getDir();
 
@@ -759,8 +856,7 @@ int main()
 				velocity.z += cos(glm::radians(yaw + ((rand() % 90) - 45)));
 				velocity.x *= 0.07f;
 				velocity.z *= 0.07f;
-				velocity.y = cos(glm::radians(yaw + ((rand() % 90) - 45)));
-				velocity.y *= 0.07f;
+				velocity.y = 0.1;
 				return velocity;
 				return velocity;
 			};
@@ -769,12 +865,23 @@ int main()
 
 				return glm::vec3(0, 0.1f, 0);
 			};
+
+
 			particleTracerTrans.position = modelTrans.position + (dir * 0.15f);
-			int newParticles = 0;
-			if (kv2.getShooting())
-				newParticles = 50;
-			pg_boom.Update(deltaTime, particleTracerTrans.position, newParticles, vel_law, off_law);
-			pg_boom.Draw(pv);
+			ps_fire.SetGeneratorProperties(
+				particleTracerTrans.position + off_law(), // Where the particles are generated
+				vel_law(), // Minimal velocity
+				vel_law() * 1.3f, // Maximal velocity
+				glm::vec3(0, -0.1, 0), // Gravity force applied to particles
+				glm::normalize(glm::vec3(233, 78, 37)), // Color (light blue)
+				2.0f, // Minimum lifetime in seconds
+				4.0f, // Maximum lifetime in seconds
+				0.008f, // Rendered size
+				0.02f, // Spawn every 0.05 seconds
+				newParticles); // And spawn 30 particles
+			ps_fire.SetMatrices(&p, &v, camera.Position, camera.Front, camera.Up);
+			ps_fire.UpdateParticles(deltaTime);
+			ps_fire.RenderParticles();
 
 		}
 #endif
@@ -796,6 +903,10 @@ int main()
 
 #ifdef TANK_SMOKE_PARTICLES
 		for (auto& kv2 : tanks) {
+			int render_smoke = 30;
+			if (kv2.getSelected() == false) {
+				render_smoke = 0;
+			}
 			kv2.TransInfo(&modelTrans);
 
 
@@ -804,10 +915,12 @@ int main()
 			glm::vec3 dir = kv2.getDir();
 
 
+			
+
 			auto vel_law = [&]() {
 				glm::vec3 velocity = dir;
-				velocity.x += sin(glm::radians(yaw + ((rand() % 60) - 30)));
-				velocity.z += cos(glm::radians(yaw + ((rand() % 60) - 30)));
+				velocity.x += sin(glm::radians(yaw + ((rand() % 80) - 40)));
+				velocity.z += cos(glm::radians(yaw + ((rand() % 80) - 40)));
 				velocity.x *= -0.01f;
 				velocity.z *= -0.01f;
 				velocity.x += wind.x;
@@ -819,12 +932,21 @@ int main()
 			auto off_law = [&]() {
 				return glm::vec3(random(hb.xMin, hb.xMax) * dir.x, 0, random(hb.zMin, hb.zMax) * dir.z);
 			};
-			particleTrans.position = modelTrans.position;
-			int newPart = 0;
-			if (renderTankParticle)
-				newPart = 20;
-			pg.Update(deltaTime, particleTrans.position, newPart, vel_law, off_law);
-			pg.Draw(pv);
+
+			ps_smoke.SetGeneratorProperties(
+				modelTrans.position + off_law(), // Where the particles are generated
+				vel_law(), // Minimal velocity
+				vel_law() * 1.1f, // Maximal velocity
+				glm::vec3(0, 0, 0), // Gravity force applied to particles
+				glm::vec3(0.5f, 0.5f, 0.5f), // Color (light blue)
+				5.0f, // Minimum lifetime in seconds
+				7.0f, // Maximum lifetime in seconds
+				0.007f, // Rendered size
+				0.02f, // Spawn every 0.05 seconds
+				render_smoke); // And spawn 30 particles
+			ps_smoke.SetMatrices(&p, &v, camera.Position, camera.Front, camera.Up);
+			ps_smoke.UpdateParticles(deltaTime);
+			ps_smoke.RenderParticles();
 		}
 #endif
 

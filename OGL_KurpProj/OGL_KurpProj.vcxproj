@@ -150,20 +150,25 @@
     <ClCompile Include="Missil.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="ParticleSystemTransformFeedback.cpp" />
     <ClCompile Include="Picker.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderProgramm.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="Tank.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="common_header.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Missil.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ParticleSystem.h" />
+    <ClInclude Include="ParticleSystemTransformFeedback.h" />
     <ClInclude Include="Picker.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShaderProgramm.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Tank.h" />
   </ItemGroup>
@@ -176,7 +181,14 @@
     <None Include="shaders\light.vert" />
     <None Include="shaders\particle.frag" />
     <None Include="shaders\particle.vert" />
+    <None Include="shaders\particles_render.frag" />
+    <None Include="shaders\particles_render.geom" />
+    <None Include="shaders\particles_render.vert" />
+    <None Include="shaders\particles_update.frag" />
+    <None Include="shaders\particles_update.geom" />
+    <None Include="shaders\particles_update.vert" />
     <None Include="shaders\picker.frag" />
+    <None Include="shaders\picker.geom" />
     <None Include="shaders\picker.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
