@@ -23,7 +23,7 @@
 
 ModelTransform modelTrans;
 Model* backpack;
-Shader* selecting_shader, * light_shader, * backpack_shader, * picking_shader, * particle_shader;
+Shader* selecting_shader, * light_shader, * backpack_shader, * picking_shader, * particle_shader, * backpack_stencil_shader;
 bool invokeMousePosition = false;
 double xPress, yPress, xRelease, yRelease, xCurrent, yCurrent;
 float koef = 1.8611f;
@@ -102,30 +102,7 @@ void draw_color_picking() {
 
 static void cursor_position_callback(GLFWwindow* win, double xpos, double ypos)
 {
-	if (invokeMousePosition) {
-
-		glfwGetCursorPos(win, &xCurrent, &yCurrent);
-
-		float x1 = xPress / width * 2 - 1, y1 = -(yPress / height * 2 - 1);
-		float x2 = xCurrent / width * 2 - 1, y2 = -(yCurrent / height * 2 - 1);
-		float xWidth = x2 - x1, yWidth = y2 - y1;
-		if (xWidth > 0 && yWidth < 0) {
-			xWidth *= -1; yWidth *= -1;
-		}
-		if (xWidth < 0 && yWidth > 0) {
-			xWidth *= -1; yWidth *= -1;
-		}
-		picking_shader->use();
-		picking_shader->setFloat("x", x1);
-		picking_shader->setFloat("y", y1);
-		picking_shader->setFloat("xWidth", xWidth);
-		picking_shader->setFloat("yWidth", yWidth);
-		picker->draw();
-		glFlush();
-		glFinish();
-		glfwSwapBuffers(win);
-
-	}
+	
 
 }
 
@@ -267,6 +244,26 @@ void processInput(GLFWwindow* win, double dt)
 	if (glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS)
 		dir |= CAM_RIGHT;
 
+
+	glfwGetCursorPos(win, &xCurrent, &yCurrent);
+	if (invokeMousePosition) {
+
+
+		float x1 = xPress / width * 2 - 1, y1 = -(yPress / height * 2 - 1);
+		float x2 = xCurrent / width * 2 - 1, y2 = -(yCurrent / height * 2 - 1);
+		if (x2 > 1) x2 = 0.99;
+		if (y2 > 1) y2 = 0.99;
+		float xWidth = x2 - x1, yWidth = y2 - y1;
+		picking_shader->use();
+		picking_shader->setFloat("x", x1);
+		picking_shader->setFloat("y", y1);
+		picking_shader->setFloat("xWidth", xWidth);
+		picking_shader->setFloat("yWidth", yWidth);
+		picker->draw();
+
+	}
+
+
 	/*
 	double newx = 0.f, newy = 0.f;
 	glfwGetCursorPos(win, &newx, &newy);
@@ -353,21 +350,19 @@ int main()
 	glfwSetKeyCallback(win, OnKeyAction);
 	glfwSetMouseButtonCallback(win, mouse_callback);
 	glfwSetCursorPosCallback(win, cursor_position_callback);
+	glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	UpdatePolygoneMode();
 
 
 	glViewport(0, 0, 1280, 720);
 	glEnable(GL_DEPTH_TEST);
-	glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-	UpdatePolygoneMode();
+	
 	glEnable(GL_CULL_FACE);
-
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	/*
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);*/
 	glFrontFace(GL_CCW);
+
+	
 
 	backpack = new Model("models/tank/tank.obj", true);
 #pragma endregion
@@ -511,6 +506,7 @@ int main()
 
 	light_shader = new Shader("shaders\\light.vert", "shaders\\light.frag");
 	backpack_shader = new Shader("shaders\\backpack.vert", "shaders\\backpack.frag");
+	backpack_stencil_shader = new Shader("shaders\\backpack_stencil.vert", "shaders\\backpack_stencil.frag");
 	selecting_shader = new Shader("shaders\\colorSelect.vert", "shaders\\colorSelect.frag");
 	picking_shader = new Shader("shaders\\picker.vert", "shaders\\picker.geom", "shaders\\picker.frag");
 	particle_shader = new Shader("shaders\\particle.vert", "shaders\\particle.frag");
@@ -562,6 +558,22 @@ int main()
 
 	CParticleSystemTransformFeedback ps_fire;
 	ps_fire.InitalizeParticleSystem("textures/fire", "flame1.png");
+
+
+	CParticleSystemTransformFeedback ps_realistic_smoke;
+	ps_realistic_smoke.InitalizeParticleSystem("textures/smoke", "smoke0.png");
+
+	ps_realistic_smoke.SetGeneratorProperties(
+		glm::vec3(0.0f, 0.0f, 0.0f), // Where the particles are generated
+		glm::vec3(-0.3, 0, -0.3), // Minimal velocity
+		glm::vec3(0.1, 2, 0.1), // Maximal velocity
+		glm::vec3(0, -1, 0), // Gravity force applied to particles
+		glm::vec3(0.0f, 0.5f, 1.0f), // Color (light blue)
+		1.5f, // Minimum lifetime in seconds
+		2.0f, // Maximum lifetime in seconds
+		0.05f, // Rendered size
+		0.000002f, // Spawn every 0.05 seconds
+		30); // And spawn 30 particles
 
 	ps.SetGeneratorProperties(
 		glm::vec3(0.0f, 0.0f, 0.0f), // Where the particles are generated
@@ -677,6 +689,14 @@ int main()
 
 	while (!glfwWindowShouldClose(win))
 	{
+
+
+
+		glClearColor(background.r, background.g, background.b, background.a);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+
+
 		newTime = glfwGetTime();
 		deltaTime = newTime - oldTime;
 		oldTime = newTime;
@@ -702,8 +722,6 @@ int main()
 
 		//groundTrans.rotation.x = glfwGetTime() * 60.0;
 
-		glClearColor(background.r, background.g, background.b, background.a);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glm::mat4 p = camera.GetProjectionMatrix();
 		glm::mat4 v = camera.GetViewMatrix();
@@ -722,6 +740,23 @@ int main()
 		ps.RenderParticles();
 		*/
 		
+		ps_realistic_smoke.SetGeneratorProperties(
+			glm::vec3(0, 0.0f, 0), // Where the particles are generated
+			glm::vec3(-fabs(cos(newTime *2) / 15), 0.15, -fabs(sin(newTime * 2) / 15)), // Minimal velocity
+			glm::vec3(fabs(cos(newTime * 2) / 15), 0.3, fabs(sin(newTime * 2) / 15)), // Maximal velocity
+			glm::vec3(0, -0.1, 0), // Gravity force applied to particles
+			glm::vec3(0.2f, 0.2f, 0.2f), // Color (light blue)
+			1.0f, // Minimum lifetime in seconds
+			3.0f, // Maximum lifetime in seconds
+			0.2f, // Rendered size
+			0.002f, // Spawn every 0.05 seconds
+			1); // And spawn 30 particles
+
+		ps_realistic_smoke.SetMatrices(&p, &v, camera.Position, camera.Front, camera.Up);
+		ps_realistic_smoke.UpdateParticles(deltaTime);
+		ps_realistic_smoke.RenderParticles();
+
+
 		ps_snow.SetGeneratorProperties(
 			glm::vec3(random(-3.0f, 3.0f), 1.5f, random(-3.0f, 3.0f)), // Where the particles are generated
 			glm::vec3(0, -0.01, 0), // Minimal velocity
@@ -764,22 +799,6 @@ int main()
 
 		
 		active_lights = 0;
-
-		// Red lamp over the tank
-		light_shader->use();
-		for (auto& kv2 : tanks) {
-			kv2.TransInfo(&modelTrans);
-			if (kv2.getSelected()) {
-				lightTrans.position = modelTrans.position;
-				lightTrans.position.y += 0.2f;
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, lightTrans.position);
-				model = glm::scale(model, lightTrans.scale);
-				light_shader->setMatrix4F("model", model);
-				light_shader->setVec3("lightColor", glm::vec3(1.0f, 0.2f, 0.2f));
-				glDrawArrays(GL_TRIANGLES, 0, 36);
-			}
-		}
 
 
 
@@ -854,9 +873,9 @@ int main()
 				glm::vec3 velocity = dir;
 				velocity.x += sin(glm::radians(yaw + ((rand() % 90) - 45)));
 				velocity.z += cos(glm::radians(yaw + ((rand() % 90) - 45)));
-				velocity.x *= 0.07f;
-				velocity.z *= 0.07f;
-				velocity.y = 0.1;
+				velocity.x *= 0.09f;
+				velocity.z *= 0.09f;
+				velocity.y = 0.05;
 				return velocity;
 				return velocity;
 			};
@@ -867,16 +886,16 @@ int main()
 			};
 
 
-			particleTracerTrans.position = modelTrans.position + (dir * 0.15f);
+			particleTracerTrans.position = modelTrans.position + (dir * 0.16f);
 			ps_fire.SetGeneratorProperties(
 				particleTracerTrans.position + off_law(), // Where the particles are generated
-				vel_law(), // Minimal velocity
+				vel_law() + glm::vec3(cos(newTime * 2) / 15, 0.0, sin(newTime * 2) / 15), // Minimal velocity
 				vel_law() * 1.3f, // Maximal velocity
 				glm::vec3(0, -0.1, 0), // Gravity force applied to particles
 				glm::normalize(glm::vec3(233, 78, 37)), // Color (light blue)
 				2.0f, // Minimum lifetime in seconds
 				4.0f, // Maximum lifetime in seconds
-				0.008f, // Rendered size
+				0.03f, // Rendered size
 				0.02f, // Spawn every 0.05 seconds
 				newParticles); // And spawn 30 particles
 			ps_fire.SetMatrices(&p, &v, camera.Position, camera.Front, camera.Up);
@@ -941,8 +960,8 @@ int main()
 				glm::vec3(0.5f, 0.5f, 0.5f), // Color (light blue)
 				5.0f, // Minimum lifetime in seconds
 				7.0f, // Maximum lifetime in seconds
-				0.007f, // Rendered size
-				0.02f, // Spawn every 0.05 seconds
+				0.03f, // Rendered size
+				0.002f, // Spawn every 0.05 seconds
 				render_smoke); // And spawn 30 particles
 			ps_smoke.SetMatrices(&p, &v, camera.Position, camera.Front, camera.Up);
 			ps_smoke.UpdateParticles(deltaTime);
@@ -961,26 +980,14 @@ int main()
 		backpack_shader->setInt("lights_count", active_lights);
 
 
-		for (auto& kv2 : tanks) {
-			kv2.TransInfo(&modelTrans);
-
-			// DRAWING BACKPACK
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, modelTrans.position);
-			model = glm::rotate(model, glm::radians(modelTrans.rotation.y), glm::vec3(0.f, 1.f, 0.f));
-			model = glm::scale(model, modelTrans.scale);
+		glEnable(GL_STENCIL_TEST);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 
-			backpack_shader->setMatrix4F("pv", pv);
-			backpack_shader->setMatrix4F("model", model);
-			backpack_shader->setFloat("shininess", 64.0f);
-			backpack_shader->setVec3("viewPos", camera.Position);
-			backpack->Draw(backpack_shader);
-
-		}
-
-
-
+		//для пола
+		
+		//траффаретный буфер не записывается
+		glStencilMask(0x00);
 		for (int i = -10; i < 10; i++) {
 			for (int j = -10; j < 10; j++) {
 				groundTrans.position = glm::vec3(i * koef, 0, j * koef);
@@ -999,7 +1006,69 @@ int main()
 				ground.Draw(backpack_shader);
 			}
 		}
+
+
+
+		for (auto& kv2 : tanks) {
+			kv2.TransInfo(&modelTrans);
+
+			// DRAWING TANK
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, modelTrans.position);
+			model = glm::rotate(model, glm::radians(modelTrans.rotation.y), glm::vec3(0.f, 1.f, 0.f));
+			model = glm::scale(model, modelTrans.scale);
+
+
+
+			//траффаретный буфер записывается единицами (всегда -> 1)
+			glStencilFunc(GL_ALWAYS, 1, 0xFF);
+			glStencilMask(0xFF);
+			backpack_shader->use();
+			backpack_shader->setMatrix4F("pv", pv);
+			backpack_shader->setMatrix4F("model", model);
+			backpack_shader->setFloat("shininess", 64.0f);
+			backpack_shader->setVec3("viewPos", camera.Position);
+			
+
+			backpack->Draw(backpack_shader);
+
+			
+			if (kv2.getSelected()) {
+
+			    
+			
+
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, modelTrans.position);
+				model = glm::rotate(model, glm::radians(modelTrans.rotation.y), glm::vec3(0.f, 1.f, 0.f));
+				
+				//auto stencilscale = modelTrans.scale * 1.1f;
+				model = glm::scale(model, modelTrans.scale);
+
+				//траффаретный буфер не записывается, сравнивается с 1
+				//увеличили и сравнили
+				glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+				glStencilMask(0x00);
+				glDisable(GL_DEPTH_TEST);
+
+				backpack_stencil_shader->use();
+				backpack_stencil_shader->setMatrix4F("pv", pv);
+				backpack_stencil_shader->setMatrix4F("model", model);
+
+				backpack->Draw(backpack_stencil_shader);
+
+				glStencilMask(0xFF);
+				glStencilFunc(GL_ALWAYS, 1, 0xFF);
+				glEnable(GL_DEPTH_TEST);
+			}
+
+		}
+
+
+
+		
 		glfwSwapBuffers(win);
+
 		glfwPollEvents();
 	}
 

@@ -173,8 +173,10 @@
     <ClInclude Include="Tank.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\backpack_stencil.frag" />
     <None Include="shaders\backpack.frag" />
     <None Include="shaders\backpack.vert" />
+    <None Include="shaders\backpack_stencil.vert" />
     <None Include="shaders\colorSelect.frag" />
     <None Include="shaders\colorSelect.vert" />
     <None Include="shaders\light.frag" />

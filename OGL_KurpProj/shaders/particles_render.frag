@@ -10,7 +10,8 @@ out vec4 FragColor;
 void main()
 {
   vec4 Color = texture2D(gSampler, vTexCoord) * vColorPart;
-  if (Color.a < 0.4)
+  
+  if (Color.a < 0.5)
 	discard;
   FragColor = Color;
 }

@@ -151,5 +151,11 @@
     <None Include="shaders\picker.geom">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="shaders\backpack_stencil.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\backpack_stencil.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

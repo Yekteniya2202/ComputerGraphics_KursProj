@@ -119,7 +119,7 @@ bool CParticleSystemTransformFeedback::InitalizeParticleSystem(string directory,
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(CParticle), (const GLvoid*)24); // Color
 		glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(CParticle), (const GLvoid*)36); // Lifetime
 		glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(CParticle), (const GLvoid*)40); // Size
-		glVertexAttribPointer(5, 1, GL_INT, GL_FALSE, sizeof(CParticle), (const GLvoid*)44); // Type
+		glVertexAttribPointer(5, 1, GL_INT,	  GL_FALSE, sizeof(CParticle), (const GLvoid*)44); // Type
 	}
 	iCurReadBuffer = 0;
 	iNumParticles = 1;
@@ -215,6 +215,8 @@ void CParticleSystemTransformFeedback::RenderParticles()
 {
 	if (!bInitialized)return;
 
+	//glBlendFunc(GL_SRC_ALPHA, GL_ZERO);
+
 	glDisable(GL_RASTERIZER_DISCARD);
 	spRenderParticles.UseProgram();
 
@@ -229,6 +231,8 @@ void CParticleSystemTransformFeedback::RenderParticles()
 
 	glDrawArrays(GL_POINTS, 0, iNumParticles);
 
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 /*-----------------------------------------------
